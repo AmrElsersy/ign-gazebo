@@ -27,6 +27,7 @@
 #include <string>
 #include <typeinfo>
 #include <type_traits>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -129,6 +130,9 @@ namespace ignition
       /// \param[in] _entity The entity to check.
       /// \param[in] _key The component to check.
       /// \return True if the component key belongs to the entity.
+      /*
+       *public: bool IGN_DEPRECATED(6) EntityHasComponent(const Entity _entity,
+       */
       public: bool EntityHasComponent(const Entity _entity,
                   const ComponentKey &_key) const;
 
@@ -144,14 +148,25 @@ namespace ignition
       /// \param[in] _entity The entity to check.
       /// \param[in] _types Component types to check that the Entity has.
       /// \return True if the given entity has all the given types.
+      // TODO(adlarkin) deprecate this?
       public: bool EntityMatches(Entity _entity,
         const std::set<ComponentTypeId> &_types) const;
+
+      /// \brief Get whether an entity has all the given component types.
+      /// \param[in] _entity The entity to check.
+      /// \param[in] _types Component types to check that the Entity has.
+      /// \return True if the given entity has all the given types.
+      public: bool EntityMatches(Entity _entity,
+        const std::unordered_set<ComponentTypeId> &_types) const;
 
       /// \brief Remove a component from an entity based on a key.
       /// \param[in] _entity The entity.
       /// \param[in] _key A key that uniquely identifies a component.
       /// \return True if the entity and component existed and the component was
       ///  removed.
+      /*
+       *public: bool IGN_DEPRECATED(6) RemoveComponent(
+       */
       public: bool RemoveComponent(
                   const Entity _entity, const ComponentKey &_key);
 
@@ -182,7 +197,11 @@ namespace ignition
       /// \param[in] _data Data used to construct the component.
       /// \return Key that uniquely identifies the component.
       public: template<typename ComponentTypeT>
-              ComponentKey CreateComponent(const Entity _entity,
+              /*
+               *ComponentKey IGN_DEPRECATED(6) CreateComponent(
+               */
+              ComponentKey CreateComponent(
+                  const Entity _entity,
                   const ComponentTypeT &_data);
 
       /// \brief Get a component assigned to an entity based on a
@@ -206,14 +225,22 @@ namespace ignition
       /// \return The component associated with the key, or nullptr if the
       /// component could not be found.
       public: template<typename ComponentTypeT>
-              const ComponentTypeT *Component(const ComponentKey &_key) const;
+              /*
+               *const ComponentTypeT* IGN_DEPRECATED(6) Component(
+               */
+              const ComponentTypeT* Component(
+                  const ComponentKey &_key) const;
 
       /// \brief Get a mutable component based on a key.
       /// \param[in] _key A key that uniquely identifies a component.
       /// \return The component associated with the key, or nullptr if the
       /// component could not be found.
       public: template<typename ComponentTypeT>
-              ComponentTypeT *Component(const ComponentKey &_key);
+              /*
+               *ComponentTypeT* IGN_DEPRECATED(6) Component(
+               */
+              ComponentTypeT* Component(
+                  const ComponentKey &_key);
 
       /// \brief Get a mutable component assigned to an entity based on a
       /// component type. If the component doesn't exist, create it and
@@ -263,18 +290,20 @@ namespace ignition
       /// \brief The first component instance of the specified type.
       /// \return First component instance of the specified type, or nullptr
       /// if the type does not exist.
+      // TODO(adlarkin) deprecate this?
       public: template<typename ComponentTypeT>
               const ComponentTypeT *First() const;
 
       /// \brief The first component instance of the specified type.
       /// \return First component instance of the specified type, or nullptr
       /// if the type does not exist.
+      // TODO(adlarkin) deprecate this?
       public: template<typename ComponentTypeT>
               ComponentTypeT *First();
 
       /// \brief Get an entity which matches the value of all the given
       /// components. For example, the following will return the entity which
-      /// has an name component equal to "name" and has a model component:
+      /// has a name component equal to "name" and has a model component:
       ///
       ///  auto entity = EntityByComponents(components::Name("name"),
       ///    components::Model());
@@ -519,6 +548,7 @@ namespace ignition
       /// and components.
       /// \detail The header of the message will not be populated, it is the
       /// responsibility of the caller to timestamp it before use.
+      /// \param[out] _state The serialized state message to populate.
       /// \param[in] _entities Entities to be serialized. Leave empty to get
       /// all entities.
       /// \param[in] _types Type ID of components to be serialized. Leave empty
@@ -610,11 +640,14 @@ namespace ignition
       /// \brief Delete an existing Entity.
       /// \param[in] _entity The entity to remove.
       /// \returns True if the Entity existed and was deleted.
+      // TODO(adlarkin) delete this method? It doesn't appear to be implemented,
+      // and I don't see it being used anywhere in the code
       private: bool RemoveEntity(const Entity _entity);
 
       /// \brief The first component instance of the specified type.
       /// \return First component instance of the specified type, or nullptr
       /// if the type does not exist.
+      // TODO(adlarkin) delete this?
       private: components::BaseComponent *First(
                    const ComponentTypeId _componentTypeId);
 
@@ -623,11 +656,17 @@ namespace ignition
       /// the component.
       /// \param[in] _componentTypeId Id of the component type.
       /// \param[in] _data Data used to construct the component.
+      /// \param[in, out] _updateData Whether the created component needs to
+      /// have its data set to _data or not. TODO explain why this is needed
       /// \return Key that uniquely identifies the component.
+      /*
+       *private: ComponentKey IGN_DEPRECATED(6) CreateComponentImplementation(
+       */
       private: ComponentKey CreateComponentImplementation(
                    const Entity _entity,
                    const ComponentTypeId _componentTypeId,
-                   const components::BaseComponent *_data);
+                   const components::BaseComponent *_data,
+                   bool &_updateData);
 
       /// \brief Get a component based on a component type.
       /// \param[in] _entity The entity.
@@ -651,73 +690,50 @@ namespace ignition
       /// \param[in] _key A key that uniquely identifies a component.
       /// \return The component associated with the key, or nullptr if the
       /// component could not be found.
-      private: const components::BaseComponent *ComponentImplementation(
-                   const ComponentKey &_key) const;
+      /*
+       *private: const components::BaseComponent* IGN_DEPRECATED(6)
+       */
+      private: const components::BaseComponent*
+               ComponentImplementation(const ComponentKey &_key) const;
 
       /// \brief Get a mutable component based on a key.
       /// \param[in] _key A key that uniquely identifies a component.
       /// \return The component associated with the key, or nullptr if the
       /// component could not be found.
-      private: components::BaseComponent *ComponentImplementation(
-                   const ComponentKey &_key);
-
-      /// \brief End of the AddComponentToView recursion. This function is
-      /// called when Rest is empty.
-      /// \param[in, out] _view The FirstComponent will be added to the
-      /// _view.
-      /// \param[in] _entity The entity.
-      private: template<typename FirstComponent,
-                        typename ...RemainingComponents,
-                        typename std::enable_if<
-                          sizeof...(RemainingComponents) == 0, int>::type = 0>
-          void AddComponentsToView(detail::View &_view,
-               const Entity _entity) const;
-
-      /// \brief Recursively add components to a view. This function is
-      /// called when Rest is NOT empty.
-      /// \param[in, out] _view The FirstComponent will be added to the
-      /// _view.
-      /// \param[in] _entity The entity.
-      private: template<typename FirstComponent,
-                        typename ...RemainingComponents,
-                        typename std::enable_if<
-                          sizeof...(RemainingComponents) != 0, int>::type = 0>
-          void AddComponentsToView(detail::View &_view,
-              const Entity _entity) const;
+      /*
+       *private: components::BaseComponent* IGN_DEPRECATED(6)
+       */
+      private: components::BaseComponent*
+               ComponentImplementation(const ComponentKey &_key);
 
       /// \brief Find a View that matches the set of ComponentTypeIds. If
       /// a match is not found, then a new view is created.
       /// \tparam ComponentTypeTs All the component types that define a view.
-      /// \return A reference to the view.
+      /// \return A pointer to the view.
       private: template<typename ...ComponentTypeTs>
-          detail::View &FindView() const;
+          detail::View<ComponentTypeTs...> *FindView() const;
 
       /// \brief Find a view based on the provided component type ids.
       /// \param[in] _types The component type ids that serve as a key into
       /// a map of views.
-      /// \param[out] _iter Iterator to the found element in the view map.
-      /// Check the return value to see if this iterator is valid.
-      /// \return True if the view was found, false otherwise.
-      private: bool FindView(const std::set<ComponentTypeId> &_types,
-          std::map<detail::ComponentTypeKey,
-          detail::View>::iterator &_iter) const;  // NOLINT
+      /// \return A pointer to the view. nullptr is returned if the view wasn't
+      /// found.
+      private: detail::BaseView *FindView(
+                   const std::vector<ComponentTypeId> &_types) const;
 
       /// \brief Add a new view to the set of stored views.
-      /// \param[in] _types The set of component type ids that is the key
+      /// \param[in] _types The set of component type ids that act as the key
       /// for the view.
       /// \param[in] _view The view to add.
-      /// \return An iterator to the view.
-      private: std::map<detail::ComponentTypeKey, detail::View>::iterator
-          AddView(const std::set<ComponentTypeId> &_types,
-              detail::View &&_view) const;
-
-      /// \brief Update views that contain the provided entity.
-      /// \param[in] _entity The entity.
-      private: void UpdateViews(const Entity _entity);
+      /// \return A pointer to the view.
+      private: detail::BaseView *AddView(
+                   const detail::ComponentTypeKey &_types,
+                   std::unique_ptr<detail::BaseView> _view) const;
 
       /// \brief Get a component ID based on an entity and the component's type.
       /// \param[in] _entity The entity.
       /// \param[in] _type Component type ID.
+      // TODO(adlarkin) delete this once I update all other methods that use it
       private: ComponentId EntityComponentIdFromType(
           const Entity _entity, const ComponentTypeId _type) const;
 
@@ -760,7 +776,8 @@ namespace ignition
 
       // Make View a friend so that it can access components.
       // This should be safe since View is internal to Gazebo.
-      friend class detail::View;
+      // TODO(adlarkin) remove this? I don't think it's needed
+      friend class detail::BaseView;
     };
     }
   }

@@ -108,132 +108,6 @@ class EntityComponentManagerFixture : public ::testing::TestWithParam<int>
 };
 
 /////////////////////////////////////////////////
-TEST_P(EntityComponentManagerFixture, AdjacentMemorySingleComponentType)
-{
-  std::vector<components::Pose> poses;
-  std::vector<ComponentKey> keys;
-
-  int count = 10;
-
-  Entity entity = manager.CreateEntity();
-  EXPECT_EQ(1u, entity);
-
-  // Create the components.
-  for (int i = 0; i < count; ++i)
-  {
-    poses.push_back(components::Pose(math::Pose3d(
-          math::Rand::IntNormal(10, 5),
-          math::Rand::IntNormal(100, 50),
-          math::Rand::IntNormal(-100, 30), 0, 0, 0)));
-    keys.push_back(manager.CreateComponent(entity, poses.back()));
-
-    // The component ids should increment by one for each component.
-    EXPECT_EQ(keys.back().second, i);
-  }
-
-  ASSERT_EQ(count, static_cast<int>(poses.size()));
-  ASSERT_EQ(count, static_cast<int>(keys.size()));
-
-  // Check the component values.
-  for (int i = 0; i < count; ++i)
-  {
-    EXPECT_EQ(poses[i], *(manager.Component<components::Pose>(keys[i])));
-  }
-  {
-    uintptr_t poseSize = sizeof(components::Pose);
-    const components::Pose *pose = nullptr, *prevPose = nullptr;
-
-    // Check that each component is adjacent in memory
-    for (int i = 0; i < count; ++i)
-    {
-      pose = manager.Component<components::Pose>(keys[i]);
-      if (prevPose != nullptr)
-      {
-        EXPECT_EQ(poseSize, reinterpret_cast<uintptr_t>(pose) -
-                            reinterpret_cast<uintptr_t>(prevPose));
-      }
-      prevPose = pose;
-    }
-  }
-  {
-    // Check that the data member of each Component is adjacent in memory
-    const math::Pose3d *poseData = nullptr, *prevPoseData = nullptr;
-    for (int i = 0; i < count; ++i)
-    {
-      poseData = &(manager.Component<components::Pose>(keys[i])->Data());
-      uintptr_t poseDataSize = sizeof(math::Pose3d) +
-        sizeof(components::BaseComponent);
-      if (prevPoseData != nullptr)
-      {
-        EXPECT_EQ(poseDataSize, reinterpret_cast<uintptr_t>(poseData) -
-                                reinterpret_cast<uintptr_t>(prevPoseData));
-      }
-      prevPoseData = poseData;
-    }
-  }
-}
-
-/////////////////////////////////////////////////
-TEST_P(EntityComponentManagerFixture, AdjacentMemoryTwoComponentTypes)
-{
-  common::setenv("IGN_DEBUG_COMPONENT_FACTORY", "true");
-
-  std::vector<components::Pose> poses;
-  std::vector<IntComponent> ints;
-  std::vector<ComponentKey> poseKeys;
-  std::vector<ComponentKey> intKeys;
-
-  int count = 100000;
-
-  Entity entity = manager.CreateEntity();
-  EXPECT_EQ(1u, entity);
-
-  // Create the components.
-  for (int i = 0; i < count; ++i)
-  {
-    poses.push_back(components::Pose(math::Pose3d(1, 2, 3, 0, 0, 0)));
-    ints.push_back(IntComponent(i));
-
-    poseKeys.push_back(manager.CreateComponent(entity, poses.back()));
-    intKeys.push_back(manager.CreateComponent(entity, ints.back()));
-
-    // The component ids should increment by one for each component.
-    EXPECT_EQ(poseKeys.back().second, i);
-    EXPECT_EQ(intKeys.back().second, i);
-  }
-
-  ASSERT_EQ(static_cast<size_t>(count), poses.size());
-  ASSERT_EQ(static_cast<size_t>(count), ints.size());
-  ASSERT_EQ(static_cast<size_t>(count), poseKeys.size());
-  ASSERT_EQ(static_cast<size_t>(count), intKeys.size());
-
-  uintptr_t poseSize = sizeof(components::Pose);
-  uintptr_t intSize = sizeof(IntComponent);
-  const components::Pose *pose = nullptr, *prevPose = nullptr;
-  const IntComponent *it = nullptr, *prevIt = nullptr;
-
-  // Check that each component is adjacent in memory
-  for (int i = 0; i < count; ++i)
-  {
-    pose = manager.Component<components::Pose>(poseKeys[i]);
-    it = manager.Component<IntComponent>(intKeys[i]);
-    if (prevPose != nullptr)
-    {
-      EXPECT_EQ(poseSize, reinterpret_cast<uintptr_t>(pose) -
-          reinterpret_cast<uintptr_t>(prevPose));
-    }
-
-    if (prevIt != nullptr)
-    {
-      EXPECT_EQ(intSize, reinterpret_cast<uintptr_t>(it) -
-          reinterpret_cast<uintptr_t>(prevIt));
-    }
-    prevPose = pose;
-    prevIt = it;
-  }
-}
-
-/////////////////////////////////////////////////
 TEST_P(EntityComponentManagerFixture, InvalidComponentType)
 {
   ComponentKey key{999, 0};
@@ -309,114 +183,6 @@ TEST_P(EntityComponentManagerFixture, RemoveComponent)
   EXPECT_FALSE(manager.EntityHasComponent(eIntDouble, cIntEIntDouble));
   EXPECT_FALSE(manager.EntityHasComponent(eIntDouble, cDoubleEIntDouble));
   EXPECT_EQ(0u, manager.ComponentTypes(eIntDouble).size());
-}
-
-/////////////////////////////////////////////////
-// Removing a component should guarantee that existing components remain
-// adjacent to each other.
-TEST_P(EntityComponentManagerFixture, RemoveAdjacent)
-{
-  std::vector<components::Pose> poses;
-  std::vector<ComponentKey> keys;
-
-  Entity entity = manager.CreateEntity();
-
-  int count = 3;
-
-  // Create the components.
-  for (int i = 0; i < count; ++i)
-  {
-    poses.push_back(components::Pose(math::Pose3d(1, 2, 3, 0, 0, 0)));
-    keys.push_back(manager.CreateComponent(entity, poses.back()));
-    EXPECT_EQ(keys.back().second, i);
-  }
-  ASSERT_EQ(poses.size(), keys.size());
-
-  uintptr_t poseSize = sizeof(components::Pose);
-  const components::Pose *pose = nullptr, *prevPose = nullptr;
-
-  // Check that each component is adjacent in memory
-  for (int i = 0; i < count; ++i)
-  {
-    pose = manager.Component<components::Pose>(keys[i]);
-    if (prevPose != nullptr)
-    {
-      EXPECT_EQ(poseSize, reinterpret_cast<uintptr_t>(pose) -
-          reinterpret_cast<uintptr_t>(prevPose));
-    }
-    prevPose = pose;
-  }
-
-  // Remove the middle component.
-  EXPECT_TRUE(manager.EntityHasComponent(entity, keys[1]));
-  EXPECT_TRUE(manager.RemoveComponent(entity, keys[1]));
-  EXPECT_FALSE(manager.EntityHasComponent(entity, keys[1]));
-
-  // Can't remove the component twice.
-  EXPECT_FALSE(manager.RemoveComponent(entity, keys[1]));
-
-  // Check that the two remaining components are still adjacent in memory
-  const components::Pose *pose1 =
-    manager.Component<components::Pose>(keys[0]);
-  const components::Pose *pose3 =
-    manager.Component<components::Pose>(keys[2]);
-  EXPECT_EQ(poseSize,
-      reinterpret_cast<uintptr_t>(pose3) - reinterpret_cast<uintptr_t>(pose1));
-}
-
-/////////////////////////////////////////////////
-// Removing a component should guarantee that existing components remain
-// adjacent to each other, and addition of a new component is adjacent to
-// the last element.
-TEST_P(EntityComponentManagerFixture, RemoveAddAdjacent)
-{
-  Entity entity = manager.CreateEntity();
-
-  std::vector<ComponentKey> keys;
-
-  keys.push_back(manager.CreateComponent(entity,
-        components::Pose(math::Pose3d(1, 2, 3, 0, 0, 0))));
-  keys.push_back(manager.CreateComponent(entity,
-        components::Pose(math::Pose3d(3, 1, 2, 0, 0, 0))));
-  keys.push_back(manager.CreateComponent(entity,
-        components::Pose(math::Pose3d(0, 10, 20, 0, 0, 0))));
-
-  uintptr_t poseSize = sizeof(components::Pose);
-
-  // Remove the middle component.
-  EXPECT_TRUE(manager.RemoveComponent(entity, keys[1]));
-
-  // Add two more new component
-  keys.push_back(manager.CreateComponent(entity,
-        components::Pose(math::Pose3d(101, 51, 520, 0, 0, 0))));
-
-  keys.push_back(manager.CreateComponent(entity,
-        components::Pose(math::Pose3d(1010, 81, 821, 0, 0, 0))));
-
-  // Check that the components are all adjacent in memory
-  const components::Pose *pose1 =
-    manager.Component<components::Pose>(keys[0]);
-  const components::Pose *pose2 =
-    manager.Component<components::Pose>(keys[2]);
-  const components::Pose *pose3 =
-    manager.Component<components::Pose>(keys[3]);
-  const components::Pose *pose4 =
-    manager.Component<components::Pose>(keys[4]);
-
-  EXPECT_EQ(poseSize,
-      reinterpret_cast<uintptr_t>(pose2) - reinterpret_cast<uintptr_t>(pose1));
-
-  EXPECT_EQ(poseSize,
-      reinterpret_cast<uintptr_t>(pose3) - reinterpret_cast<uintptr_t>(pose2));
-
-  EXPECT_EQ(poseSize,
-      reinterpret_cast<uintptr_t>(pose4) - reinterpret_cast<uintptr_t>(pose3));
-
-  // Check the values of the components.
-  EXPECT_EQ(components::Pose(math::Pose3d(1, 2, 3, 0, 0, 0)), *pose1);
-  EXPECT_EQ(components::Pose(math::Pose3d(0, 10, 20, 0, 0, 0)), *pose2);
-  EXPECT_EQ(components::Pose(math::Pose3d(101, 51, 520, 0, 0, 0)), *pose3);
-  EXPECT_EQ(components::Pose(math::Pose3d(1010, 81, 821, 0, 0, 0)), *pose4);
 }
 
 /////////////////////////////////////////////////
@@ -1416,6 +1182,55 @@ TEST_P(EntityComponentManagerFixture, EachGetsNewOldRemove)
   EXPECT_EQ(1, eachCount<IntComponent>(manager));
   EXPECT_EQ(0, newCount<IntComponent>(manager));
   EXPECT_EQ(0, removedCount<IntComponent>(manager));
+}
+
+//////////////////////////////////////////////////
+TEST_P(EntityComponentManagerFixture, EachAddRemoveComponent)
+{
+  // test calling ecm.Each on entities that have components added/removed
+  // frequently. This is common with *Cmd components
+
+  Entity e1 = manager.CreateEntity();
+  EXPECT_EQ(1u, manager.EntityCount());
+  EXPECT_EQ(0, eachCount<IntComponent>(manager));
+  auto comp = manager.Component<IntComponent>(e1);
+  EXPECT_EQ(nullptr, comp);
+
+  // add a component
+  manager.CreateComponent<IntComponent>(e1, IntComponent(123));
+  EXPECT_EQ(1, eachCount<IntComponent>(manager));
+  comp = manager.Component<IntComponent>(e1);
+  ASSERT_NE(nullptr, comp);
+  EXPECT_EQ(123, comp->Data());
+
+  // remove a component
+  manager.RemoveComponent(e1, IntComponent::typeId);
+  EXPECT_EQ(nullptr, manager.Component<IntComponent>(e1));
+  EXPECT_EQ(0, eachCount<IntComponent>(manager));
+
+  // add the same type of component back in
+  manager.CreateComponent<IntComponent>(e1, IntComponent(456));
+  EXPECT_EQ(1, eachCount<IntComponent>(manager));
+  comp = manager.Component<IntComponent>(e1);
+  ASSERT_NE(nullptr, comp);
+  EXPECT_EQ(456, comp->Data());
+
+  // remove the component again
+  manager.RemoveComponent(e1, IntComponent::typeId);
+  EXPECT_EQ(nullptr, manager.Component<IntComponent>(e1));
+  EXPECT_EQ(0, eachCount<IntComponent>(manager));
+
+  // add and remove the component before calling ecm.Each. This is to make sure
+  // that the views remove any entities in the toAdd queue if required
+  // components for entities in the toAdd queue are removed before calling Each
+  manager.CreateComponent<IntComponent>(e1, IntComponent(789));
+  comp = manager.Component<IntComponent>(e1);
+  ASSERT_NE(nullptr, comp);
+  EXPECT_EQ(789, comp->Data());
+  manager.RemoveComponent(e1, IntComponent::typeId);
+  EXPECT_EQ(nullptr, manager.Component<IntComponent>(e1));
+  // call ecm.Each after adding/removing the component
+  EXPECT_EQ(0, eachCount<IntComponent>(manager));
 }
 
 //////////////////////////////////////////////////
