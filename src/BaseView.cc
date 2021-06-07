@@ -74,3 +74,32 @@ const std::unordered_set<ComponentTypeId> &BaseView::ComponentTypes() const
 {
   return this->componentTypes;
 }
+
+const std::set<Entity> &BaseView::Entities() const
+{
+  return this->entities;
+}
+
+//////////////////////////////////////////////////
+const std::set<Entity> &BaseView::NewEntities() const
+{
+  return this->newEntities;
+}
+
+//////////////////////////////////////////////////
+const std::set<Entity> &BaseView::ToRemoveEntities() const
+{
+  return this->toRemoveEntities;
+}
+
+//////////////////////////////////////////////////
+const std::unordered_map<Entity, bool> &BaseView::ToAddEntities() const
+{
+  return this->toAddEntities;
+}
+
+//////////////////////////////////////////////////
+void BaseView::ClearToAddEntities()
+{
+  this->toAddEntities.clear();
+}

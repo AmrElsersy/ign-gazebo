@@ -226,22 +226,12 @@ template<typename ...ComponentTypeTs>
 Entity EntityComponentManager::EntityByComponents(
     const ComponentTypeTs &..._desiredComponents) const
 {
-  // TODO(adlarkin) check if new view implementation will work with this method.
-  // There's a chance that a view may not be up-to-date when this is called since
-  // the current view update approach is to update the view whenever they're used
-  // in an Each(...) call. So, if an entity has component(s) modified and this is
-  // called before calling Each(...), the views may not accurately represent the
-  // current state of the entites
-  //
-  // Also, once the above concern is addressed, update this method with new API
-  // calls if needed
-
   // Get all entities which have components of the desired types
   const auto &view = this->FindView<ComponentTypeTs...>();
 
   // Iterate over entities
   Entity result{kNullEntity};
-  for (const Entity entity : view->entities)
+  for (const Entity entity : view->Entities())
   {
     bool different{false};
 
@@ -274,20 +264,12 @@ template<typename ...ComponentTypeTs>
 std::vector<Entity> EntityComponentManager::EntitiesByComponents(
     const ComponentTypeTs &..._desiredComponents) const
 {
-  // TODO(adlarkin) make sure the new view approach works here. The concern is that
-  // the component order matters with the new view, but didn't before... so, as long
-  // as this->FindView<...>(...) creates a new view if one doesn't exist for the
-  // requested component order, then I believe this should be fine
-  //
-  // Also, once the above concern is addressed, update this method with new API
-  // calls if needed
-
   // Get all entities which have components of the desired types
   const auto &view = this->FindView<ComponentTypeTs...>();
 
   // Iterate over entities
   std::vector<Entity> result;
-  for (const Entity entity : view->entities)
+  for (const Entity entity : view->Entities())
   {
     bool different{false};
 
@@ -319,9 +301,6 @@ template<typename ...ComponentTypeTs>
 std::vector<Entity> EntityComponentManager::ChildrenByComponents(Entity _parent,
      const ComponentTypeTs &..._desiredComponents) const
 {
-  // TODO(adlarkin) same notes apply here as what was described in
-  // EntityComponentManager::EntitiesByComponents
-
   // Get all entities which have components of the desired types
   const auto &view = this->FindView<ComponentTypeTs...>();
 
@@ -330,7 +309,7 @@ std::vector<Entity> EntityComponentManager::ChildrenByComponents(Entity _parent,
 
   // Iterate over entities
   std::vector<Entity> result;
-  for (const Entity entity : view->entities)
+  for (const Entity entity : view->Entities())
   {
     if (children.find(entity) == children.end())
     {
@@ -421,7 +400,7 @@ void EntityComponentManager::Each(typename identity<std::function<
 
   // Iterate over the entities in the view, and invoke the callback
   // function.
-  for (const Entity entity : view->entities)
+  for (const Entity entity : view->Entities())
   {
     if (!std::apply(_f, view->EntityComponentConstData(entity)))
     {
@@ -441,7 +420,7 @@ void EntityComponentManager::Each(typename identity<std::function<
 
   // Iterate over the entities in the view, and invoke the callback
   // function.
-  for (const Entity entity : view->entities)
+  for (const Entity entity : view->Entities())
   {
     if (!std::apply(_f, view->EntityComponentData(entity)))
     {
@@ -470,7 +449,7 @@ void EntityComponentManager::EachNew(typename identity<std::function<
   // Iterate over the entities in the view and in the newly created
   // entities list, and invoke the callback
   // function.
-  for (const Entity entity : view->newEntities)
+  for (const Entity entity : view->NewEntities())
   {
     if (!std::apply(_f, view->EntityComponentData(entity)))
     {
@@ -491,7 +470,7 @@ void EntityComponentManager::EachNew(typename identity<std::function<
   // Iterate over the entities in the view and in the newly created
   // entities list, and invoke the callback
   // function.
-  for (const Entity entity : view->newEntities)
+  for (const Entity entity : view->NewEntities())
   {
     if (!std::apply(_f, view->EntityComponentConstData(entity)))
     {
@@ -512,7 +491,7 @@ void EntityComponentManager::EachRemoved(typename identity<std::function<
   // Iterate over the entities in the view and in the newly created
   // entities list, and invoke the callback
   // function.
-  for (const Entity entity : view->toRemoveEntities)
+  for (const Entity entity : view->ToRemoveEntities())
   {
     if (!std::apply(_f, view->EntityComponentConstData(entity)))
     {
@@ -533,7 +512,7 @@ detail::View<ComponentTypeTs...> *EntityComponentManager::FindView() const
     auto view = static_cast<detail::View<ComponentTypeTs...>*>(baseViewPtr);
 
     // add any new entities to the view before using it
-    for (const auto &[entity, isNew] : view->toAddEntities)
+    for (const auto &[entity, isNew] : view->ToAddEntities())
     {
       view->AddEntityWithConstComps(entity, isNew,
           this->Component<ComponentTypeTs>(entity)...);
@@ -541,7 +520,7 @@ detail::View<ComponentTypeTs...> *EntityComponentManager::FindView() const
           const_cast<EntityComponentManager*>(this)->Component<ComponentTypeTs>(
             entity)...);
     }
-    view->toAddEntities.clear();
+    view->ClearToAddEntities();
 
     return view;
   }
@@ -575,9 +554,6 @@ detail::View<ComponentTypeTs...> *EntityComponentManager::FindView() const
 template<typename ComponentTypeT>
 bool EntityComponentManager::RemoveComponent(Entity _entity)
 {
-  // TODO(adlarkin) make sure that the internal RemoveComponent method called
-  // here behaves as expected. I left a TODO note for myself in the other method
-  // about what I believe I need to do
   const auto typeId = ComponentTypeT::typeId;
   return this->RemoveComponent(_entity, typeId);
 }

@@ -60,12 +60,6 @@ class IGNITION_GAZEBO_VISIBLE View : public BaseView
   /// \brief Documentation inherited
   public: bool RemoveEntity(const Entity _entity) override
   {
-    // TODO figure out how to handle this - should an entity in invalidData be
-    // considered a part of the view or not? Right now, the implementation of
-    // this method interprets entities in invalidData as entities that are NOT a
-    // part of the view (I believe this is the right interpretation, especially
-    // based on the BaseView API)
-
     this->invalidData.erase(_entity);
     this->invalidConstData.erase(_entity);
     this->missingCompTracker.erase(_entity);

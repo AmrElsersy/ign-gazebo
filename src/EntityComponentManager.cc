@@ -122,8 +122,6 @@ class ignition::gazebo::EntityComponentManagerPrivate
   /// \brief The set of components that each entity has.
   /// NOTE: Any modification of this data structure must be followed
   /// by setting `entityComponentsDirty` to true.
-  // TODO(adlarkin) remove this and just make use of componentStorage instead?
-  // it seems like this is unnecessary
   public: std::unordered_map<Entity,
           std::unordered_set<ComponentTypeId>> entityComponents;
 
@@ -132,10 +130,6 @@ class ignition::gazebo::EntityComponentManagerPrivate
   /// vector for easy access of their pre-allocated work.  This vector
   /// is recalculated if `entityComponents` is changed (when
   /// `entityComponentsDirty` == true).
-  /*
-   *public: std::vector<std::unordered_map<Entity,
-   *        std::unordered_map<ComponentTypeId, ComponentKey>>::iterator>
-   */
   public: std::vector<std::unordered_map<Entity,
           std::unordered_set<ComponentTypeId>>::iterator>
             entityComponentIterators;
@@ -360,8 +354,7 @@ void EntityComponentManager::ProcessRemoveEntityRequests()
 bool EntityComponentManager::RemoveComponent(
     const Entity _entity, const ComponentTypeId &_typeId)
 {
-  auto componentId = this->EntityComponentIdFromType(_entity, _typeId);
-  ComponentKey key{_typeId, componentId};
+  ComponentKey key{_typeId, 0};
   return this->RemoveComponent(_entity, key);
 }
 
@@ -417,8 +410,6 @@ bool EntityComponentManager::RemoveComponent(
 bool EntityComponentManager::EntityHasComponent(const Entity _entity,
     const ComponentKey &_key) const
 {
-  // TODO(adlarkin) re-write this to use componentStorage if entityComponents
-  // ends up being removed
   if (!this->HasEntity(_entity))
     return false;
   auto &compSet = this->dataPtr->entityComponents[_entity];
@@ -429,8 +420,6 @@ bool EntityComponentManager::EntityHasComponent(const Entity _entity,
 bool EntityComponentManager::EntityHasComponentType(const Entity _entity,
     const ComponentTypeId &_typeId) const
 {
-  // TODO(adlarkin) re-write this to use componentStorage if entityComponents
-  // ends up being removed
   if (!this->HasEntity(_entity))
     return false;
 
@@ -686,22 +675,6 @@ bool EntityComponentManager::EntityMatches(Entity _entity,
   }
 
   return true;
-}
-
-/////////////////////////////////////////////////
-ComponentId EntityComponentManager::EntityComponentIdFromType(
-    const Entity _entity, const ComponentTypeId _type) const
-{
-  auto ecIter = this->dataPtr->entityComponents.find(_entity);
-
-  if (ecIter == this->dataPtr->entityComponents.end())
-    return -1;
-
-  auto typeIter = ecIter->second.find(_type);
-  if (typeIter != ecIter->second.end())
-    return *typeIter;
-
-  return -1;
 }
 
 /////////////////////////////////////////////////
@@ -1414,11 +1387,6 @@ void EntityComponentManager::SetState(
       if (nullptr == comp)
       {
         // Create component
-        // TODO clean this up a bit? CreateComponentImplementation calls
-        // the Factory::Instance()->New method internally I believe, so there
-        // seems to be duplicate work going on here (should be able to just call
-        // CreateComponentImplementation I believe; the Factory call should be
-        // able to be removed)
         auto newComp = components::Factory::Instance()->New(compMsg.type());
 
         if (nullptr == newComp)

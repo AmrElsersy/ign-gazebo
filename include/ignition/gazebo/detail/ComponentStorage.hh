@@ -54,12 +54,7 @@ enum class ComponentAdditionResult
   FAILED_ADDITION = 3
 };
 
-// TODO determine if symbol visibility should be hidden or visible. I believe
-// they need to be visible b/c there are template methods here that * I think *
-// are being used outside of the ign-gazebo library (for example, AddComponent
-// is called by ECM::AddComponent, which is called by external users in their
-// own applications)
-class IGNITION_GAZEBO_VISIBLE ComponentStorage
+class IGNITION_GAZEBO_HIDDEN ComponentStorage
 {
   /// \brief Clear all of the entity and component data that has been tracked.
   /// This "resets" the storage to its initial, empty state.

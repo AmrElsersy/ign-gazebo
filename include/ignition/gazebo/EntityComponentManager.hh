@@ -637,13 +637,6 @@ namespace ignition
       /// \return True if the Entity has been marked to be removed.
       private: bool IsMarkedForRemoval(const Entity _entity) const;
 
-      /// \brief Delete an existing Entity.
-      /// \param[in] _entity The entity to remove.
-      /// \returns True if the Entity existed and was deleted.
-      // TODO(adlarkin) delete this method? It doesn't appear to be implemented,
-      // and I don't see it being used anywhere in the code
-      private: bool RemoveEntity(const Entity _entity);
-
       /// \brief The first component instance of the specified type.
       /// \return First component instance of the specified type, or nullptr
       /// if the type does not exist.
@@ -730,13 +723,6 @@ namespace ignition
                    const detail::ComponentTypeKey &_types,
                    std::unique_ptr<detail::BaseView> _view) const;
 
-      /// \brief Get a component ID based on an entity and the component's type.
-      /// \param[in] _entity The entity.
-      /// \param[in] _type Component type ID.
-      // TODO(adlarkin) delete this once I update all other methods that use it
-      private: ComponentId EntityComponentIdFromType(
-          const Entity _entity, const ComponentTypeId _type) const;
-
       /// \brief Add an entity and its components to a serialized state message.
       /// \param[out] _msg The state message.
       /// \param[in] _entity The entity to be added.
@@ -773,11 +759,6 @@ namespace ignition
       // states. Like the runners, the managers are internal.
       friend class NetworkManagerPrimary;
       friend class NetworkManagerSecondary;
-
-      // Make View a friend so that it can access components.
-      // This should be safe since View is internal to Gazebo.
-      // TODO(adlarkin) remove this? I don't think it's needed
-      friend class detail::BaseView;
     };
     }
   }

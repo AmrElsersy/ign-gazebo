@@ -130,10 +130,6 @@ class IGNITION_GAZEBO_VISIBLE BaseView
   /// \param[in] _entity The entity to add.
   /// \return True if the entity was added to the list, false if the entity
   /// was not associated with the view.
-  // TODO make this pure virtual since we may need to remove it from invalidData
-  // and missingCompTracker? I'll need to look into how removal occurs
-  // * actually, after looking at this further, I believe that this method
-  // (and the toRemoveEntities data member) are not needed. I'll re-visit this later *
   public: bool AddEntityToRemoved(const Entity _entity);
 
   /// \brief Clear the list of new entities
@@ -147,34 +143,52 @@ class IGNITION_GAZEBO_VISIBLE BaseView
   /// state.
   public: virtual void Reset() = 0;
 
+  /// \brief Get all of the entities in the view
+  /// \return The entities in the view
+  public: const std::set<Entity> &Entities() const;
+
+  /// \brief Get all of the new entities in the view
+  /// \return The new entities in the view
+  public: const std::set<Entity> &NewEntities() const;
+
+  /// \brief Get all of the entities to be removed from the view
+  /// \return The entities to be removed from the view
+  public: const std::set<Entity> &ToRemoveEntities() const;
+
+  /// \brief Get all of the entities to be added to the view
+  /// \return The entities to be added to the view
+  public: const std::unordered_map<Entity, bool> &ToAddEntities() const;
+
+  /// \brief Clear all of the entities that are marked as to be added to the
+  /// view
+  public: void ClearToAddEntities();
+
   /// \brief Destructor
   public: virtual ~BaseView()
   {
   }
 
-  // TODO make this private/protected and have public API methods for this container?
-  // TODO make this a std::unordered_set for better performance. We need to make
-  // sure nothing else depends on the ordered preserved by std::set first
+  // TODO(adlarkin) make this a std::unordered_set for better performance.
+  // We need to make sure nothing else depends on the ordered preserved by
+  // std::set first
   /// \brief All the entities that belong to this view.
-  public: std::set<Entity> entities;
+  protected: std::set<Entity> entities;
 
-  // TODO make this private/protected and have public API methods for this container?
-  // TODO make this a std::unordered_set for better performance. We need to make
-  // sure nothing else depends on the ordered preserved by std::set first
+  // TODO(adlarkin) make this a std::unordered_set for better performance.
+  // We need to make sure nothing else depends on the ordered preserved by
+  // std::set first
   /// \brief List of newly created entities
-  public: std::set<Entity> newEntities;
+  protected: std::set<Entity> newEntities;
 
-  // TODO make this private/protected and have public API methods for this container?
-  // TODO make this a std::unordered_set for better performance. We need to make
-  // sure nothing else depends on the ordered preserved by std::set first
+  // TODO(adlarkin) make this a std::unordered_set for better performance.
+  // We need to make sure nothing else depends on the ordered preserved by
+  // std::set first
   /// \brief List of entities about to be removed
-  public: std::set<Entity> toRemoveEntities;
+  protected: std::set<Entity> toRemoveEntities;
 
-  // TODO make this private/protected and have public API methods for this container?
-  // (remember to clear this after adding the entities to the view)
   /// \brief List of entities to be added to the view. The value of the map
   /// indicates whether the entity is new to the entity component manager or not
-  public: std::unordered_map<Entity, bool> toAddEntities;
+  protected: std::unordered_map<Entity, bool> toAddEntities;
 
   /// \brief The component types in the view
   protected: std::unordered_set<ComponentTypeId> componentTypes;
